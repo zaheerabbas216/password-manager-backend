@@ -15,6 +15,34 @@ const addAdmin = (req, res, next) => {
       password: req.body.password,
     };
 
+    if (
+      payload.username === "" &&
+      payload.email === "" &&
+      payload.password === ""
+    ) {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please enter the username" });
+    }
+
+    if (payload.username === "") {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please enter the username" });
+    }
+
+    if (payload.email === "") {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please enter the email" });
+    }
+
+    if (payload.password === "") {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please enter the password" });
+    }
+
     bcrypt
       .hash(req.body.password, 8)
       .then((hash) => {
@@ -85,5 +113,44 @@ const login = (req, res, next) => {
     next(error);
   }
 };
+const verifypassword = (req, res, next) => {
+  try {
+    let email = req.body.email;
+    let password = req.body.password;
 
-export { getAdminUsers, addAdmin, login };
+    let sql = `SELECT * FROM ${tablename} WHERE email = ?`;
+    db.query(sql, email, (err, result) => {
+      if (err)
+        return res
+          .status(400)
+          .send({ status: 400, message: "err getting user", error: err });
+
+      if (result.length === 0) {
+        return res.status(400).send({ status: 400, message: "user not found" });
+      }
+
+      bcrypt.compare(password, result[0].password).then((isMatch) => {
+        let payload = {
+          admin_id: result[0].admin_id.toString(),
+        };
+        if (isMatch === false) {
+          return res
+            .status(400)
+            .send({ status: 400, message: "password is incorrect" });
+        }
+        return res.status(200).send({
+          status: 200,
+          message: "Password verified successfully!",
+        });
+      });
+    });
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: adminUsers.controller.js:120 ~ verifypassword ~ error:",
+      error
+    );
+    next(error);
+  }
+};
+
+export { getAdminUsers, addAdmin, login, verifypassword };

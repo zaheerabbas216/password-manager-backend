@@ -65,7 +65,7 @@ const editPassword = (req, res, next) => {
       username: req.body.username,
       email: req.body.email,
       phone: req.body.phone,
-      password: req.body.password,
+      password: btoa(req.body.password),
       security_question: req.body.security_question,
       security_answer: req.body.security_answer,
       app_name: req.body.app_name,
@@ -124,4 +124,128 @@ const deletePassword = (req, res, next) => {
   }
 };
 
-export { getallpasswords, addnewpassword, editPassword, deletePassword };
+const getPasswordDetailsById = (req, res, next) => {
+  try {
+    let id = req.params.app_id;
+
+    let sql = `SELECT * FROM ${tableName} WHERE app_id = ?`;
+
+    db.query(sql, id, (err, result) => {
+      if (err)
+        return res
+          .status(400)
+          .send({ status: 400, message: "error getting the data", error: err });
+
+      if (result.length === 0)
+        return res
+          .status(400)
+          .send({ status: 400, message: "no password found" });
+
+      return res.status(200).send({ status: 200, message: "OK", data: result });
+    });
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: passwordManager.controller.js:131 ~ getPasswordDetailsById ~ error:",
+      error
+    );
+    next();
+  }
+};
+
+const decryptPassword = (req, res, next) => {
+  try {
+    let app_id = req.params.app_id;
+    let encryptedPassword = req.body.password;
+
+    if (encryptedPassword === "") {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please provide the password" });
+    }
+
+    let verifypasswordwithid = `SELECT * FROM ${tableName} WHERE app_id = ?`;
+
+    db.query(verifypasswordwithid, app_id, (err, result) => {
+      if (err)
+        return res
+          .status(400)
+          .send({ status: 400, message: "err getting the app data" });
+
+      if (result.length === 0) {
+        return res.status(400).send({ status: 400, message: "App not found" });
+      }
+
+      let decryptingPassword = atob(encryptedPassword);
+
+      return res.status(200).send({
+        status: 200,
+        message: "Decrypted Successfully",
+        appName: result[0].app_name,
+        passsword: decryptingPassword,
+      });
+    });
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: passwordManager.controller.js:159 ~ decryptPassword ~ error:",
+      error
+    );
+    next(error);
+  }
+};
+
+const encryptPassword = (req, res, next) => {
+  try {
+    let app_id = req.params.app_id;
+    let decrypedPassword = req.body.password;
+
+    if (!decrypedPassword) {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please provide the password" });
+    }
+
+    if (decrypedPassword === "") {
+      return res
+        .status(400)
+        .send({ status: 400, message: "please provide the password" });
+    }
+
+    let verifypasswordwithid = `SELECT * FROM ${tableName} WHERE app_id = ?`;
+
+    db.query(verifypasswordwithid, app_id, (err, result) => {
+      if (err)
+        return res
+          .status(400)
+          .send({ status: 400, message: "err getting the app data" });
+
+      if (result.length === 0) {
+        return res.status(400).send({ status: 400, message: "App not found" });
+      }
+
+      let encryptingPassword = btoa(decrypedPassword);
+
+      return res.status(200).send({
+        status: 200,
+        message: "Decrypted Successfully",
+        appName: result[0].app_name,
+        passsword: encryptingPassword,
+      });
+    });
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: passwordManager.controller.js:159 ~ decryptPassword ~ error:",
+      error
+    );
+    next(error);
+  }
+};
+
+export {
+  getallpasswords,
+  addnewpassword,
+  editPassword,
+  deletePassword,
+  getPasswordDetailsById,
+  decryptPassword,
+  encryptPassword,
+};
